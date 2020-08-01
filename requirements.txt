@@ -1,6 +1,0 @@
-prompt_toolkit
-pygments~=2.6.1
-pexpect
-pgcli~=3.0.0
-pgspecial~=1.11.10
-pyyaml

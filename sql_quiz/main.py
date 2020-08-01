@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import json
+import os
 import sys
 from dataclasses import dataclass
 from typing import List, Callable
@@ -17,6 +17,8 @@ from pygments.lexers import get_lexer_by_name
 
 postgres_lexer = get_lexer_by_name('postgres')
 terminal256_formatter = get_formatter_by_name('terminal256')
+
+quiz_filepath = ""
 
 FULL_PROMPT = """
 \x1b[38;5;47;01m{title}\x1b[39;00m
@@ -122,7 +124,7 @@ class Quiz:
         )
 
         with open(filename, "w") as f:
-            yaml.dump(quiz)
+            yaml.dump(f, quiz)
 
 
 class QuizCli(pgcli.main.PGCli):
@@ -212,7 +214,8 @@ class QuizCli(pgcli.main.PGCli):
             terminal256_formatter)
 
 
-if __name__ == '__main__':
+def main():
+    global quiz_filepath
     # PGCli is an awesome & well-developed project, but it doesn't have great hooks for
     # subclassing like this --- we'd need to override methods that have the REPL loop,
     # which would involve putting the REPL loop in our code. Joel has filed a PR with them
@@ -224,10 +227,15 @@ if __name__ == '__main__':
     # If a quiz is passed in as "script --quiz my_quiz.yaml ...other args..., this is a quiz!
     if len(sys.argv) >= 2:
         if sys.argv[1] == "--quiz":
-            quiz_filepath = sys.argv[2]
+            quiz_filepath = os.path.join(os.getcwd(), sys.argv[2])
             # So it uses our settings, we'll force them to read in our pgclirc file here
             sys.argv[1] = "--pgclirc"
-            sys.argv[2] = "./pgclirc"
+            sys.argv[2] = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "./pgclirc")
             pgcli.main.PGCli = QuizCli
 
     pgcli.main.cli()
+
+
+if __name__ == '__main__':
+    main()
