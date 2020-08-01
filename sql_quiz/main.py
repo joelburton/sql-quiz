@@ -45,7 +45,7 @@ class Quiz:
     current_num: int = 0
 
     @property
-    def question(self):
+    def question(self) -> dict:
         return self.questions[self.current_num]
 
     @classmethod
@@ -74,9 +74,10 @@ class Quiz:
 
         self.current_num = 0
 
-        return dict(title=self.title,
-                    description=self.description,
-                    num_questions=len(self.questions))
+        return dict(
+            title=self.title,
+            description=self.description,
+            num_questions=len(self.questions))
 
     def verify_answer(self, output: List[str]) -> bool:
         """Compare student output to expected."""
