@@ -125,7 +125,7 @@ class Quiz:
         )
 
         with open(filename, "w") as f:
-            yaml.dump(f, quiz)
+            yaml.dump(quiz, f)
 
 
 class QuizCli(pgcli.main.PGCli):
