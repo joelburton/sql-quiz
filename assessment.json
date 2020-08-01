@@ -1,0 +1,58 @@
+{
+  "title": "Database Assessment",
+  "description": "Welcome to Rithm's Automated Week 4 Assessment!",
+  "closed": false,
+  "questions": [
+    {
+      "title": "Movie Titles",
+      "prompt": "List the title of all movies.",
+      "solution": "SELECT title\n  FROM movies;"
+    },
+    {
+      "title": "G-Rated Movies",
+      "prompt": "List all information on G-rated movies",
+      "solution": "    SELECT * \n      FROM movies\n      WHERE rating='G';"
+    },
+    {
+      "title": "Oldest First",
+      "prompt": "List the title and release year of every movie, ordered with the oldest movie first.",
+      "solution": "SELECT title, release_year \n      FROM movies\n      ORDER BY release_year;"
+    },
+    {
+      "title": "Longest Movies",
+      "prompt": "List all information on the 5 longest movies.",
+      "solution": "    SELECT * \n      FROM movies\n      ORDER BY runtime DESC\n      LIMIT 5;"
+    },
+    {
+      "title": "Counts by Rating",
+      "prompt": "A query that returns the columns of `rating` and `total`, tabulating the total number of G, PG, PG-13, and R-rated movies.",
+      "solution": "    SELECT rating, COUNT(*) AS total\n      FROM movies\n      GROUP BY rating;"
+    },
+    {
+      "title": "Average Runtimes",
+      "prompt": "A table with columns of `release_year` and `average_runtime`, tabulating the average runtime by the year for every movie in the database. The data should be in reverse chronological order (ie, the most recent year should be first).",
+      "solution": "SELECT release_year, AVG(runtime) AS average_runtime\n      FROM movies\n      GROUP BY release_year\n      ORDER BY release_year DESC;"
+    },
+    {
+      "title": "Movies and Studios",
+      "prompt": "The movie title and studio name for every movie in the database.",
+      "solution": "SELECT m.title, s.name \n      FROM movies m\n        LEFT JOIN studios s ON m.studio_id=s.id;"
+    },
+    {
+      "title": "Stars and Movies",
+      "prompt": "The star first name, star last name, and movie title for every matching movie and star pair in the database.",
+      "solution": "SELECT s.first_name, s.last_name, m.title\n      FROM stars s\n        JOIN roles r ON s.id = r.star_id\n        JOIN movies m ON m.id = r.movie_id;"
+    },
+    {
+      "title": "Stars and G-Rated Movies",
+      "prompt": "The first and last names of every star who has been in a G-rated movie. The first and last name should appear only once for each star, even if they are in several G-rated movies. *IMPORTANT NOTE*: it's possible that there can be two *different* actors with the same name, so make sure your solution accounts for that.",
+      "solution": "    SELECT s.first_name, s.last_name\n      FROM stars s\n        JOIN roles r ON s.id = r.star_id\n        JOIN movies m ON m.id = r.movie_id\n      WHERE m.rating = 'G'\n      GROUP BY s.id;"
+    },
+    {
+      "title": "Stars and Popularity",
+      "prompt": "The first and last names of every star along with the number of movies they  have been in, in descending order by the number of movies. (Similar to #9, ensure that two different actors with the same name are considered separately).",
+      "solution": " ELECT s.first_name, s.last_name, COUNT(*) AS count\n      FROM stars s\n        JOIN roles r ON s.id = r.star_id\n      GROUP BY s.id\n      ORDER BY count DESC;"
+    }
+  ]
+}
+

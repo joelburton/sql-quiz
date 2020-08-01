@@ -1,6 +1,7 @@
 {
   "title": "SQL Select Quiz",
   "description": "Welcome to our quiz. We'll test you on advanced SQL.",
+  "closed": false,
   "questions": [
     {
       "title": "Do math",

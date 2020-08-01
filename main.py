@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass
 from typing import List, Callable
 
 import pgcli.main
+from pgspecial.main import RAW_QUERY
 from prompt_toolkit.shortcuts import message_dialog
 from pygments import highlight
 from pygments.formatters import get_formatter_by_name
@@ -32,34 +34,42 @@ class Quiz:
 
     title: str
     description: str
+    closed: bool
     questions: list
+    filepath: str
 
     _expected_attached: bool = False
-    _current_num: int = 0
+    current_num: int = 0
 
     @property
     def question(self):
-        return self.questions[self._current_num]
+        return self.questions[self.current_num]
 
     @classmethod
     def load_from_json_file(cls, filepath: str) -> Quiz:
         """Get quiz from JSON file and return new instance."""
 
-        return cls(**json.load(open(filepath)))
+        quiz_data = json.load(open(filepath))
+        quiz_data['filepath'] = filepath
+        return cls(**quiz_data)
 
     def attach_expected(self, eval_fn: Callable) -> None:
         """Run quiz answers and get expected outcome."""
 
-        for q in self.questions:
-            output, query = eval_fn(' '.join(q['solution']))
-            q['expected'] = output
+        # Non-closed quizzes contain actual solution SQL in json, so we can
+        # calculate the expected output and not embed it in the json. Closed
+        # quizzes do not have this.
+        if not self.closed:
+            for q in self.questions:
+                output, query = eval_fn(q['solution'])
+                q['expected'] = output
 
         self._expected_attached = True
 
     def start(self) -> dict:
         """Start quiz: set first question, return title/description to display."""
 
-        self._current_num = 0
+        self.current_num = 0
 
         return dict(title=self.title,
                     description=self.description,
@@ -82,8 +92,8 @@ class Quiz:
     def goto_next(self) -> str:
         """Go to next question."""
 
-        if self._current_num < len(self.questions) - 1:
-            self._current_num += 1
+        if self.current_num < len(self.questions) - 1:
+            self.current_num += 1
             return self.full_prompt()
 
         else:
@@ -92,8 +102,26 @@ class Quiz:
     def solution(self) -> str:
         """Show complete answer."""
 
-        # TODO: use pygments to colorize
-        return "\n".join(self.question['solution'])
+        return self.question['solution']
+
+    def export_closed_quiz(self, filename: str) -> None:
+        """Export JSON of quiz w/expected but no solutions."""
+
+        self.closed = True
+
+        for q in self.questions:
+            if 'solution' in q:
+                del q['solution']
+
+        quiz = dict(
+            title=self.title,
+            description=self.description,
+            questions=self.questions,
+            closed=self.closed,
+        )
+
+        with open(filename, "w") as f:
+            json.dump(quiz, f)
 
 
 class QuizCli(pgcli.main.PGCli):
@@ -101,6 +129,9 @@ class QuizCli(pgcli.main.PGCli):
         """Hook for both our commands and quiz state, since this is called at init."""
 
         super().register_special_commands()
+
+        # noinspection PyAttributeOutsideInit
+        self.quiz = Quiz.load_from_json_file(quiz_filepath)
 
         self.pgspecial.register(
             self.quiz_show_prompt,
@@ -116,15 +147,22 @@ class QuizCli(pgcli.main.PGCli):
             "Move to next question",
             arg_type=pgcli.main.NO_QUERY)
 
-        self.pgspecial.register(
-            self.quiz_show_solution,
-            "\\solution",
-            "\\solution",
-            "Show solution to problem",
-            arg_type=pgcli.main.NO_QUERY)
+        if not self.quiz.closed:
+            self.pgspecial.register(
+                self.quiz_show_solution,
+                "\\solution",
+                "\\solution",
+                "Show solution to problem",
+                arg_type=pgcli.main.NO_QUERY)
 
-        # noinspection PyAttributeOutsideInit
-        self.quiz = Quiz.load_from_json_file("quiz.json")
+        self.pgspecial.register(
+            self.quiz_export_closed_quiz,
+            "\\export_closed_quiz",
+            "\\export_closed_quiz",
+            "Export solution-free JSON quiz",
+            arg_type=RAW_QUERY
+        )
+
         welcome = self.quiz.start()
 
         message_dialog(title=welcome['title'], text=welcome['description']).run()
@@ -144,6 +182,9 @@ class QuizCli(pgcli.main.PGCli):
         if self.quiz.verify_answer(output):
             message_dialog(title="Success!",
                            text="You can continue to the next question with \\next").run()
+            with open(self.quiz.filepath + ".log", "a") as out:
+                out.write(f"\n\n*** {self.quiz.current_num}\n\n{text}")
+
         return output, query
 
     def quiz_next_question(self, **_):
@@ -153,6 +194,14 @@ class QuizCli(pgcli.main.PGCli):
     def quiz_show_prompt(self, **_):
         """Show prompt to user."""
         yield None, None, None, self.quiz.full_prompt()
+
+    def quiz_export_closed_quiz(self, query, **_):
+        """Export a closed quiz"""
+
+        # This is a bit of a hack, but: the filename is part of a "query", so let's get it:
+        filename = query.rsplit(" ")[1]
+        self.quiz.export_closed_quiz(filename)
+        yield None, None, None, f"Export successful: {filename}"
 
     def quiz_show_solution(self, **_):
         """Show answer."""
@@ -170,6 +219,14 @@ if __name__ == '__main__':
 
     # For now, we'll monkey-patch in our quiz as the one that their cli() function runs.
     # Dynamic languages FTW!
-    origPGCli = pgcli.main.PGCli
-    pgcli.main.PGCli = QuizCli
+
+    # If a quiz is passed in as "script --quiz my_quiz.json ...other args..., this is a quiz!
+    if len(sys.argv) >= 2:
+        if sys.argv[1] == "--quiz":
+            quiz_filepath = sys.argv[2]
+            # So it uses our settings, we'll force them to read in our pgclirc file here
+            sys.argv[1] = "--pgclirc"
+            sys.argv[2] = "./pgclirc"
+            pgcli.main.PGCli = QuizCli
+
     pgcli.main.cli()
