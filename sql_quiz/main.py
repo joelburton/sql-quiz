@@ -111,6 +111,7 @@ class Quiz:
         """Export YAML of quiz w/expected but no solutions."""
 
         self.closed = True
+        del self.filepath
 
         for q in self.questions:
             if 'solution' in q:
