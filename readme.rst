@@ -8,7 +8,8 @@ Walkthrough
 
 ::
 
-    $ python main.py --quiz sample.yaml movies
+    $ pip install https://github.com/joelburton/sql-quiz.git
+    $ sql_quiz --quiz sample.yaml movies
     movies # \question
       (shows question0
     movies # SELECT 7;
