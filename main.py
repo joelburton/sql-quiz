@@ -7,6 +7,7 @@ import sys
 from dataclasses import dataclass
 from typing import List, Callable
 
+import yaml
 import pgcli.main
 from pgspecial.main import RAW_QUERY
 from prompt_toolkit.shortcuts import message_dialog
@@ -46,10 +47,10 @@ class Quiz:
         return self.questions[self.current_num]
 
     @classmethod
-    def load_from_json_file(cls, filepath: str) -> Quiz:
-        """Get quiz from JSON file and return new instance."""
+    def load_from_yaml_file(cls, filepath: str) -> Quiz:
+        """Get quiz from YAML file and return new instance."""
 
-        quiz_data = json.load(open(filepath))
+        quiz_data = yaml.load(open(filepath), Loader=yaml.SafeLoader)
         quiz_data['filepath'] = filepath
         return cls(**quiz_data)
 
@@ -105,7 +106,7 @@ class Quiz:
         return self.question['solution']
 
     def export_closed_quiz(self, filename: str) -> None:
-        """Export JSON of quiz w/expected but no solutions."""
+        """Export YAML of quiz w/expected but no solutions."""
 
         self.closed = True
 
@@ -121,7 +122,7 @@ class Quiz:
         )
 
         with open(filename, "w") as f:
-            json.dump(quiz, f)
+            yaml.dump(quiz)
 
 
 class QuizCli(pgcli.main.PGCli):
@@ -131,7 +132,7 @@ class QuizCli(pgcli.main.PGCli):
         super().register_special_commands()
 
         # noinspection PyAttributeOutsideInit
-        self.quiz = Quiz.load_from_json_file(quiz_filepath)
+        self.quiz = Quiz.load_from_yaml_file(quiz_filepath)
 
         self.pgspecial.register(
             self.quiz_show_prompt,
@@ -159,7 +160,7 @@ class QuizCli(pgcli.main.PGCli):
             self.quiz_export_closed_quiz,
             "\\export_closed_quiz",
             "\\export_closed_quiz",
-            "Export solution-free JSON quiz",
+            "Export solution-free quiz",
             arg_type=RAW_QUERY
         )
 
@@ -220,7 +221,7 @@ if __name__ == '__main__':
     # For now, we'll monkey-patch in our quiz as the one that their cli() function runs.
     # Dynamic languages FTW!
 
-    # If a quiz is passed in as "script --quiz my_quiz.json ...other args..., this is a quiz!
+    # If a quiz is passed in as "script --quiz my_quiz.yaml ...other args..., this is a quiz!
     if len(sys.argv) >= 2:
         if sys.argv[1] == "--quiz":
             quiz_filepath = sys.argv[2]

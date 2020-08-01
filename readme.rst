@@ -1,14 +1,14 @@
 SQL Quiz
 ========
 
-WIP.
+System combining both a friendly CLI for PostgreSQL with a quiz-like system.
 
 Walkthrough
 -----------
 
 ::
 
-    $ python main.py movies
+    $ python main.py --quiz sample.yaml movies
     movies # \question
       (shows question0
     movies # SELECT 7;
@@ -23,15 +23,10 @@ Walkthrough
     movies # \next
       (all done, gives congrats msg)
 
+To take a quiz and make a "closed version" (without solutions), use the
+command ``\export_closed_quiz new-closed-quiz.yaml``
 
 Todo
 ----
 
-- Finish main app
-
-- Figure out a nice way to deal with annoying colorization of headers
-
-- Subclass to get "open quiz" (ie, they can see answers) and "closed quiz" (no answers).
-  Obviously, for closed quiz, we'll need a way for it to have the expected output in the
-  json on load, rather than the sql that can created the expected output.
-
+- Nothing at the moment :)

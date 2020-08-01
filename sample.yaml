@@ -1,0 +1,21 @@
+title: Sample Quiz
+closed: false
+description: >
+  Welcome to our sample quiz.
+
+  Your goal is to get output *exactly* matching what's given.
+
+questions:
+
+  - title: Movie Titles
+    prompt: The title of every movie.
+    solution: >
+      SELECT title
+        FROM movies;
+
+  - title: G Rated Movies
+    prompt: All information on the G-rated movies.
+    solution: >
+      SELECT *
+        FROM movies
+        WHERE rating='G';
