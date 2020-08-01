@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import json
-# import re
-
-from prompt_toolkit.shortcuts import message_dialog
-import pgcli.main
 from dataclasses import dataclass
-
 from typing import List, Callable
+
+import pgcli.main
+from prompt_toolkit.shortcuts import message_dialog
+from pygments import highlight
+from pygments.formatters import get_formatter_by_name
+from pygments.lexers import get_lexer_by_name
+
+postgres_lexer = get_lexer_by_name('postgres')
+terminal256_formatter = get_formatter_by_name('terminal256')
 
 FULL_PROMPT = """
 \x1b[38;5;47;01m{title}\x1b[39;00m
@@ -20,17 +24,6 @@ This should return:
 
 {output}
 """
-
-
-def colorify(s: str) -> str:
-    """Add color escapes."""
-    return s # for now
-    # return rf"\x1b[38;5;47;01m{s}\x1b[39;00m"
-
-
-def decolorify(s: str) -> str:
-    """Remove console color escapes."""
-    return s.replace(r'\x1b[38;5;47;01m', '')
 
 
 @dataclass
@@ -59,7 +52,6 @@ class Quiz:
 
         for q in self.questions:
             output, query = eval_fn(' '.join(q['solution']))
-            print(output, query)
             q['expected'] = output
 
         self._expected_attached = True
@@ -76,16 +68,12 @@ class Quiz:
     def verify_answer(self, output: List[str]) -> bool:
         """Compare student output to expected."""
 
-        output = [decolorify(line) for line in output]
         return output == self.question['expected']
 
     def full_prompt(self) -> str:
         """Return full prompt for this question, to display."""
 
-        output = self.question['expected']
-        # colorify query col names
-        output[1] = colorify(output[1])
-        output = "    " + "\n    ".join(output)
+        output = "    " + "\n    ".join(self.question['expected'])
         return FULL_PROMPT.format(
             title=self.question['title'],
             prompt=self.question['prompt'],
@@ -94,7 +82,7 @@ class Quiz:
     def goto_next(self) -> str:
         """Go to next question."""
 
-        if self._current_num < len(self.questions):
+        if self._current_num < len(self.questions) - 1:
             self._current_num += 1
             return self.full_prompt()
 
@@ -105,7 +93,7 @@ class Quiz:
         """Show complete answer."""
 
         # TODO: use pygments to colorize
-        return "".join(self.question['solution'])
+        return "\n".join(self.question['solution'])
 
 
 class QuizCli(pgcli.main.PGCli):
@@ -168,7 +156,10 @@ class QuizCli(pgcli.main.PGCli):
 
     def quiz_show_solution(self, **_):
         """Show answer."""
-        yield None, None, None, self.quiz.solution()
+        yield None, None, None, highlight(
+            self.quiz.solution(),
+            postgres_lexer,
+            terminal256_formatter)
 
 
 if __name__ == '__main__':

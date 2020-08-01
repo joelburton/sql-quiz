@@ -3,6 +3,26 @@ SQL Quiz
 
 WIP.
 
+Walkthrough
+-----------
+
+::
+
+    $ python main.py movies
+    movies # \question
+      (shows question0
+    movies # SELECT 7;
+      (rewards with cheerful window)
+    movies # \next
+      (shows next question)
+    ... work, struggle ...
+    movies # \question
+      (shows question & expected again, in we need it)
+    movies # \solution
+      (shows solution)
+    movies # \next
+      (all done, gives congrats msg)
+
 
 Todo
 ----
