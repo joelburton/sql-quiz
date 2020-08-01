@@ -1,5 +1,7 @@
 """Postgresql Quiz CLI."""
 
+from __future__ import annotations
+
 import json
 # import re
 
@@ -7,7 +9,7 @@ from prompt_toolkit.shortcuts import message_dialog
 import pgcli.main
 from dataclasses import dataclass
 
-from typing import List
+from typing import List, Callable
 
 FULL_PROMPT = """
 \x1b[38;5;47;01m{title}\x1b[39;00m
@@ -39,7 +41,7 @@ class Quiz:
     description: str
     questions: list
 
-    _expected_attached = False
+    _expected_attached: bool = False
     _current_num: int = 0
 
     @property
@@ -47,12 +49,12 @@ class Quiz:
         return self.questions[self._current_num]
 
     @classmethod
-    def load_from_json_file(cls, filepath):
+    def load_from_json_file(cls, filepath: str) -> Quiz:
         """Get quiz from JSON file and return new instance."""
 
         return cls(**json.load(open(filepath)))
 
-    def attach_expected(self, eval_fn):
+    def attach_expected(self, eval_fn: Callable) -> None:
         """Run quiz answers and get expected outcome."""
 
         for q in self.questions:
